@@ -59,19 +59,28 @@ def ask_question(question: str):
         vector_store = get_vector_store()
         
         # 2. Retrieval with Score Filtering
-        # similarity_search_with_relevance_scores normalizes scores (usually 0-1)
-        # Note: If using Chroma default L2, this wrapper converts it to a relevance score.
-        results = vector_store.similarity_search_with_relevance_scores(question, k=5)
+        # ChromaDB by default uses L2 distance (Eucledian distance).
+        # Lower score = better match.
+        # similarity_search_with_score returns raw distance.
+        results = vector_store.similarity_search_with_score(question, k=5)
         
-        # 3. Filter by Threshold
+        # 3. Filter by Threshold (L2 Distance)
+        # For L2: Small distance is better.
+        # A rough heuristic for "relevant" depends on embedding model.
+        # nomic-embed-text typically has distances in range 300-500 for matching text if unnormalized, 
+        # or 0-1 if normalized. Based on your logs, you are getting approx 300-400.
+        # Let's set a maximum distance threshold. Docs with distance > threshold are discarded.
+        # Based on logs: Valid docs had score ~310-335. Irrelevant might be > 400.
+        MAX_DISTANCE_THRESHOLD = 400 
+        
         filtered_docs = []
         if results:
-            filtered_docs = [doc for doc, score in results if score >= SIMILARITY_THRESHOLD]
+            filtered_docs = [doc for doc, score in results if score <= MAX_DISTANCE_THRESHOLD]
             
             # Debug info
-            print(f"DEBUG: Found {len(results)} docs. After threshold {SIMILARITY_THRESHOLD}: {len(filtered_docs)} docs.")
+            print(f"DEBUG: Found {len(results)} docs. After L2 threshold {MAX_DISTANCE_THRESHOLD}: {len(filtered_docs)} docs.")
             for doc, score in results:
-                print(f" - Score: {score:.4f} | Src: {os.path.basename(doc.metadata.get('source', ''))}")
+                print(f" - L2 Distance: {score:.4f} | Src: {os.path.basename(doc.metadata.get('source', ''))}")
         else:
             print("DEBUG: No documents found by vector store.")
 
