@@ -71,7 +71,7 @@ def ask_question(question: str):
         # or 0-1 if normalized. Based on your logs, you are getting approx 300-400.
         # Let's set a maximum distance threshold. Docs with distance > threshold are discarded.
         # Based on logs: Valid docs had score ~310-335. Irrelevant might be > 400.
-        MAX_DISTANCE_THRESHOLD = 400 
+        MAX_DISTANCE_THRESHOLD = 600 
         
         filtered_docs = []
         if results:
